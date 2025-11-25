@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout source code
       uses: actions/checkout@v3
 
     - name: Setup Node.js
@@ -31,7 +31,7 @@ jobs:
     - name: Build Next.js app
       run: pnpm run build
 
-    - name: Copy build to EC2
+    - name: Upload build to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.HOST_2 }}
@@ -40,7 +40,7 @@ jobs:
         source: ".next, package.json, pnpm-lock.yaml, public, prisma"
         target: "/var/www/honors-web-app"
 
-    - name: Restart PM2 on EC2
+    - name: Deploy and restart PM2
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.HOST_2 }}
