@@ -17,16 +17,27 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 20
-        cache: 'pnpm'
 
     - name: Install PNPM
-      run: npm install -g pnpm
+      run: |
+        npm install -g pnpm
+        pnpm --version
+
+    - name: Enable PNPM caching
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.pnpm-store
+          ~/.cache
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
     - name: Generate Prisma client
-      run: npx prisma generate
+      run: pnpm prisma generate
 
     - name: Build Next.js app
       run: pnpm run build
@@ -48,7 +59,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /var/www/honors-web-app
-          
+
           echo "DATABASE_URL=${{ secrets.DB_URL }}" > .env
           echo "NEXTAUTH_URL=http://${{ secrets.HOST_1 }}" >> .env
           echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
@@ -56,7 +67,7 @@ jobs:
           echo "PORT=3000" >> .env
 
           pnpm install --prod
-          npx prisma generate
+          pnpm prisma generate
 
           pm2 start pnpm --name next-app -- start -p 3000 || pm2 reload next-app
           pm2 save
