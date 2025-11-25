@@ -1,4 +1,4 @@
-name: Deploy to Backend Server B
+name: Deploy to Backend Server B (Demo Branch)
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout source code
       uses: actions/checkout@v3
 
     - name: Setup SSH
@@ -23,21 +23,26 @@ jobs:
         ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.HOST_2 }} << 'EOF'
         
         cd /var/www/honors-web-app || exit
-        
+
         git fetch origin
         git reset --hard origin/demo
-        
-        echo "DATABASE_URL=${{ secrets.DB_URL }}" > .env
-        echo "NEXTAUTH_URL=http://${{ secrets.HOST_2 }}" >> .env
-        echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
-        echo "NODE_ENV=production" >> .env
-        echo "PORT=3000" >> .env
-        
+
+        cat <<EOT > .env
+DATABASE_URL=${{ secrets.DB_URL }}
+NEXTAUTH_URL=http://${{ secrets.HOST_2 }}
+NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+NODE_ENV=production
+PORT=3000
+EOT
+
         npm install --legacy-peer-deps
+        npm install @next/swc-linux-x64-gnu
+
         npx prisma generate
         npm run build
-        
-        pm2 restart next-app || pm2 start "npm run start -- -p 3000" --name next-app
+
+        pm2 delete next-app || true
+        pm2 start "npm run start -- -p 3000" --name next-app
         pm2 save
         
         EOF
