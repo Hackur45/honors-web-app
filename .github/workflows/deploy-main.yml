@@ -25,7 +25,7 @@ jobs:
       run: pnpm install --no-frozen-lockfile
 
     - name: Install missing Radix UI dependencies
-      run: pnpm add @radix-ui/react-tooltip @radix-ui/react-popover @radix-ui/react-dialog @radix-ui/react-navigation-menu @radix-ui/react-menubar @radix-ui/react-sidebar --save
+      run: pnpm add @radix-ui/react-tooltip @radix-ui/react-popover @radix-ui/react-dialog @radix-ui/react-navigation-menu @radix-ui/react-menubar --save
 
     - name: Generate Prisma client
       run: npx prisma generate
