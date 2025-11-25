@@ -17,13 +17,20 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 20
-        cache: 'pnpm'
 
     - name: Install PNPM
       run: npm install -g pnpm
 
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --no-frozen-lockfile
+
+    - name: Install missing Radix UI dependencies
+      run: |
+        pnpm add @radix-ui/react-tooltip \
+                 @radix-ui/react-popover \
+                 @radix-ui/react-dialog \
+                 @radix-ui/react-navigation-menu \
+                 @radix-ui/react-menubar --save
 
     - name: Generate Prisma client
       run: npx prisma generate
@@ -31,7 +38,7 @@ jobs:
     - name: Build Next.js app
       run: pnpm run build
 
-    - name: Upload build to EC2
+    - name: Copy build to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.HOST_2 }}
@@ -40,7 +47,7 @@ jobs:
         source: ".next, package.json, pnpm-lock.yaml, public, prisma"
         target: "/var/www/honors-web-app"
 
-    - name: Deploy and restart PM2
+    - name: Restart PM2 on EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.HOST_2 }}
