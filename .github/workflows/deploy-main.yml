@@ -1,4 +1,4 @@
-name: Deploy to AWS EC2
+name: Deploy to Backend Server A
 
 on:
   push:
@@ -9,12 +9,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        host: [ ${{ secrets.HOST_1 }}, ${{ secrets.HOST_2 }} ]
-
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Setup SSH
@@ -22,25 +18,26 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Deploy to server
+    - name: Deploy to Server A
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ matrix.host }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.HOST_1 }} << 'EOF'
         
         cd /var/www/honors-web-app || exit
-
-        git pull origin main
-
-        echo "DATABASE_URL='${{ secrets.DB_URL }}'" > .env
+        
+        git fetch origin
+        git reset --hard origin/main
+        
+        echo "DATABASE_URL=${{ secrets.DB_URL }}" > .env
+        echo "NEXTAUTH_URL=http://${{ secrets.HOST_1 }}" >> .env
+        echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
         echo "NODE_ENV=production" >> .env
         echo "PORT=3000" >> .env
-
+        
         npm install --legacy-peer-deps
         npx prisma generate
         npm run build
-
-        pm2 reload next-app || pm2 start "npm run start -- -p 3000" --name next-app
         
+        pm2 restart next-app || pm2 start "npm run start -- -p 3000" --name next-app
         pm2 save
         
-        exit
         EOF
