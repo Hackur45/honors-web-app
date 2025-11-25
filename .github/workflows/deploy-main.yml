@@ -30,7 +30,12 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
+    # - name: Build Next.js app
+    #   run: pnpm run build
+
     - name: Build Next.js app
+      env:
+        DATABASE_URL: ${{ secrets.DB_URL }}
       run: pnpm run build
 
     - name: Copy build to EC2
