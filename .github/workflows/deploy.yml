@@ -1,0 +1,46 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        host: [ ${{ secrets.HOST_1 }}, ${{ secrets.HOST_2 }} ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to server
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ matrix.host }} << 'EOF'
+        
+        cd /var/www/honors-web-app || exit
+
+        git pull origin main
+
+        echo "DATABASE_URL='${{ secrets.DB_URL }}'" > .env
+        echo "NODE_ENV=production" >> .env
+        echo "PORT=3000" >> .env
+
+        npm install --legacy-peer-deps
+        npx prisma generate
+        npm run build
+
+        pm2 reload next-app || pm2 start "npm run start -- -p 3000" --name next-app
+        
+        pm2 save
+        
+        exit
+        EOF
